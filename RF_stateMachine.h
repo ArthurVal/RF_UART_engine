@@ -6,8 +6,8 @@
 
 #define STATE_FCT_BYTE 2		//FCT CODE
 
-#define STATE_STOP_BYTE_1 3		//LENGTH
-#define STATE_STOP_BYTE_2 4		//LENGTH
+#define STATE_STOP_BYTE_1 3		//CR (0x0D)
+#define STATE_STOP_BYTE_2 4		//LN (0x0A)
 
 #define STATE_START_RF_1 5		//LENGTH
 #define STATE_START_RF_2 6		//LENGTH
@@ -43,8 +43,7 @@
 
 #define STATE_ANS_GET_PARAM_1 29		//LENGTH
 #define STATE_ANS_GET_PARAM_2 30		//LENGTH
-#define STATE_ANS_GET_PARAM_3 31		//Nbr
-#define STATE_ANS_GET_PARAM_M 32		//ID
+#define STATE_ANS_GET_PARAM_3 31		//ID
 #define STATE_ANS_GET_PARAM_N 33		//PARAM
 
 #define STATE_ERR_CRC_1 34		//LENGTH
@@ -56,6 +55,9 @@
 #define STATE_ERR_CARTE_1 38		//LENGTH
 #define STATE_ERR_CARTE_2 39		//LENGTH
 
+#define STATE_CRC_1 40
+#define STATE_CRC_2 41
+
 		//Error states
 #define STATE_ERR 100
 
@@ -64,44 +66,119 @@
 /*        Function Code definition          */
 /*==========================================*/	
 
-#define FCT_START_RF 0x00
-#define FCT_MOVE_PHI 0x01
-#define FCT_MOVE_THETA 0x02
-#define FCT_SET_PARAM 0x03
-#define FCT_SET_M_PARAM 0x04
+#define FCT_START_RF 0
+#define FCT_MOVE_PHI 1
+#define FCT_MOVE_THETA 2
+#define FCT_SET_PARAM  3
+#define FCT_SET_M_PARAM  4
 
-#define FCT_GET_PARAM 0x10
+#define FCT_GET_PARAM 16
 
-#define FCT_ANS_START_RF 0x20
-#define FCT_ANS_MOVE 0x21
-#define FCT_ANS_GET_PARAM 0x22
+#define FCT_ANS_START_RF 32
+#define FCT_ANS_MOVE 33
+#define FCT_ANS_GET_PARAM 34
 
-#define FCT_ERR_CRC 0xF0
-#define FCT_ERR_MSG_UNKNOW 0xF1
-#define FCT_ERR_CARTE 0xF2
+#define FCT_ERR_CRC 240
+#define FCT_ERR_MSG_UNKNOW 241
+#define FCT_ERR_CARTE 242
+
+/*==========================================*/	
+/*             ID definition                */
+/*==========================================*/
+
+#define ID_THETA_MAX 0x00
+#define ID_THETA_MIN 0x01
+#define ID_PHI_MAX 0x02
+#define ID_PHI_MIN 0x03
+#define ID_ACQ_TIME 0x04
+#define ID_NBR_PTS 0x05
+#define ID_ANGLE_PHI 0x06
+#define ID_ANGLE_THETA 0x07
+#define ID_INTENSITY_THETA 0x08
+#define ID_INTENSITY_PHI 0x09
+
+#define ID_ASCII 0x00
+#define ID_INT_8 0x10
+#define ID_INT_16 0x20
+#define ID_INT_32 0x30
+#define ID_INT_64 0x40
+#define ID_FLOAT 0x50
+#define ID_DOUBLE 0x60
+
+/*==========================================*/	
+/*           STATUS definition              */
+/*==========================================*/
+
+#define STATUS_WAIT 0
+#define STATUS_WRITING 1
+#define STATUS_ERR_START_BYTE 2
+#define STATUS_ERR_STOP_BYTE 3
+#define STATUS_ERR_FCT_UNKNOW 4
+#define STATUS_ERR_LEN 5
+#define STATUS_ERR_ACK 6
+#define STATUS_ERR_STATE 7
+
+/*==========================================*/	
+/*    angleName & paramName definition      */
+/*==========================================*/
+
+#define THETA_MAX 0x00
+#define THETA_MIN 0x01
+#define PHI_MAX 0x02
+#define PHI_MIN 0x03
+#define ACQ_TIME 0x04
+#define NBR_PTS 0x05
+#define ANGLE_PHI 0x06
+#define ANGLE_THETA 0x07
+#define INTENSITY_THETA 0x08
+#define INTENSITY_PHI 0x09
+
+/*==========================================*/	
+/*         paramFormat definition           */
+/*==========================================*/
+
+#define ASCII 0x00
+#define INT_8 0x10
+#define INT_16 0x20
+#define INT_32 0x30
+#define INT_64 0x40
+#define FLOAT 0x50
+#define DOUBLE 0x60
 
 /*==========================================*/	
 /*           Struct definition              */
 /*==========================================*/	
 
+#include <stdint.h>
+
+typedef struct {
+
+	unsigned int ptrMsg;
+	unsigned int sizeMsg;
+	unsigned char* currentMsg; 
+
+	unsigned char functionCode;
+	unsigned short length;
+
+	unsigned char nbrParam;
+  unsigned char ID[256];
+
+		//Everything after Length in the msg
+	unsigned int sizeData; 
+  unsigned char* Data;
+
+	unsigned short crc_msg;
+	unsigned short crc_compute;
+
+} msg_uart; 
 
 typedef struct {
 	unsigned int state;	
 
 	bool RX_msgRdy;
-	bool TX_msgSend;
+	bool TX_msgEnd;
 
-	char currentChar;
-	char currentMsg[];
-
-	char functionCode;
-	uint16_t length;
-
-  char ID[];
-  char Data[];	
-
-	uint16_t crc_msg;
-	uint16_t crc_compute;
+	msg_uart msg;
 
 	int status; 
 		

@@ -3,6 +3,7 @@
 
 //include
 #include "RF_stateMachine.h"
+#include <stdlib.h>
 
 class RF_uartEngine
 {
@@ -16,10 +17,14 @@ class RF_uartEngine
 		state_machine stateMachine;
 
 		//Methods
-		CRC_compute();
+		void MSG_clear();
+		void CRC_compute();
 		bool CRC_check();
 
 	public:
+		//Constructor & Destructor
+		RF_uartEngine();
+		inline ~RF_uartEngine() {free(stateMachine.msg.currentMsg); free(stateMachine.msg.Data);};
 		//Attributs
 
 		//Methods

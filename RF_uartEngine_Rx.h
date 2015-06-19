@@ -6,7 +6,7 @@
 class RF_uartEngine_Rx : public RF_uartEngine
 {
 	private:
-		//Attributs
+		//Attrib
 		
 		//Methods
 
@@ -16,10 +16,13 @@ class RF_uartEngine_Rx : public RF_uartEngine
 		//Methods
 
 	public:
-		//Attributs
+		//Constructor
+		RF_uartEngine_Rx();
 
 		//Methods
-
+		bool readChar(char);	
+		bool readMsg(char*,int);
+		msg_uart getMsg();
 
 }; // class RF_uartEngine_Rx
 #endif // RF_UARTENGINE_RX_H
