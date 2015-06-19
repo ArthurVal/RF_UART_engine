@@ -159,11 +159,11 @@ typedef struct {
 	unsigned short length;
 
 	unsigned char nbrParam;
-  unsigned char ID[256];
+	unsigned char ID[256];
 
 		//Everything after Length in the msg
 	unsigned int sizeData; 
-  unsigned char* Data;
+	unsigned char* Data;
 
 	unsigned short crc_msg;
 	unsigned short crc_compute;
