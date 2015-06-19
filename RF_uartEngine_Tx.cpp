@@ -36,22 +36,11 @@ char RF_uartEngine_Tx::sendStartRF()
 		stateMachine.msg.functionCode = FCT_START_RF;
 
 			//Set length
-		stateMachine.msg.length = 0x0000;
-
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)malloc(sizeof(unsigned char) * stateMachine.msg.sizeMsg);
+		stateMachine.msg.length = stateMachine.msg.sizeData = 0x0000;
+		//stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * 1);
 
 			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7) = 0x0A;
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
@@ -81,22 +70,11 @@ char RF_uartEngine_Tx::sendMoveAngle(unsigned char angleName)
 			}
 
 			//Set length
-		stateMachine.msg.length = 0x0000;
-
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * stateMachine.msg.sizeMsg);
+		stateMachine.msg.length = stateMachine.msg.sizeData =  0x0000;
+		//stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * 1);
 
 			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7) = 0x0A;
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
@@ -105,7 +83,12 @@ char RF_uartEngine_Tx::sendMoveAngle(unsigned char angleName)
 /*==               sendSetParam                   ==*/
 /*==================================================*/
 
-char RF_uartEngine_Tx::sendSetParam(unsigned char paramName, unsigned char paramFormat, const char* paramValue, unsigned short paramValueSize)
+char RF_uartEngine_Tx::sendSetParam(
+                                    unsigned char paramName, 
+                                    unsigned char paramFormat, 
+                                    const char* paramValue, 
+                                    unsigned short paramValueSize
+                                   )
 {
 	if(stateMachine.status == STATUS_WAIT){
 		//Message creation
@@ -215,6 +198,7 @@ char RF_uartEngine_Tx::sendSetParam(unsigned char paramName, unsigned char param
 */
 			default:						
 				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
 					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
@@ -222,24 +206,8 @@ char RF_uartEngine_Tx::sendSetParam(unsigned char paramName, unsigned char param
 			break;
 		}
 
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
-
 			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB
-		
-		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
-			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
-		}		
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
@@ -269,26 +237,12 @@ char RF_uartEngine_Tx::sendGetParam(unsigned char paramName)
 	
 			//Set length & sizeData & Data		
 		stateMachine.msg.length = stateMachine.msg.sizeData = 1;
+
+		stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 		*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
-
 			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB
-		
-		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
-			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
-		}		
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
@@ -308,25 +262,12 @@ char RF_uartEngine_Tx::sendAnswerStartRF(bool OK)
 	
 			//Set length & sizeData & Data		
 		stateMachine.msg.length = stateMachine.msg.sizeData = 1;
+
+		stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 		*(stateMachine.msg.Data) = (char)OK;
 
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
-
 			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB		
-		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
-			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
-		}
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
@@ -346,29 +287,180 @@ char RF_uartEngine_Tx::sendAnswerMoveAngle(bool OK)
 	
 			//Set length & sizeData & Data		
 		stateMachine.msg.length = stateMachine.msg.sizeData = 1;
+
+		stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 		*(stateMachine.msg.Data) = (char)OK;
 
-			//Create the msg buffer
-		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
-		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
-
-			//Setup the msg
-		*(stateMachine.msg.currentMsg) = 0x3A;
-		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
-		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB		
-		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
-			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
-		}
-		CRC_compute();
-		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
-		*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
-		*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+			//Setup the msg		
+		createCurrentMsg();
 	}
 	return writeChar();	
 }
 
+/*==================================================*/
+/*==           sendAnswerGetParam                 ==*/
+/*==================================================*/
+
+char RF_uartEngine_Tx::sendAnswerGetParam(
+                                          unsigned char paramName, 
+                                          unsigned char paramFormat, 
+                                          const char* paramValue, 
+                                          unsigned short paramValueSize
+                                          )
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+		char charValue;
+
+		short shortValue;
+
+		int intValue;
+		unsigned int maskIntValue = 0xFF000000;
+
+		long longValue;
+		unsigned long maskLongValue = 0xFF00000000000000;
+
+		float floatValue;
+		unsigned int maskFloatValue = 0xFF000000;
+
+		double doubleValue;
+		unsigned long maskDoubleValue = 0xFF00000000000000;
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_ANS_GET_PARAM;
+
+			//Set ID & nbrParam
+		stateMachine.msg.nbrParam = 1;	
+		stateMachine.msg.ID[0] = paramFormat | paramName;
+	
+			//Set length & sizeData & Data
+		switch(paramFormat){
+			case ASCII:				
+				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
+					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
+				}
+			break;	
+	
+			case INT_8:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(char);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				charValue = (char) atoi(paramValue);
+				*(stateMachine.msg.Data + 1) = charValue;
+			break;	
+	
+			case INT_16:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(short);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				(*stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				shortValue = (short) atoi(paramValue);
+				*(stateMachine.msg.Data + 1) = (unsigned char)((shortValue & 0xFF00) >> 8); //MSB
+				*(stateMachine.msg.Data + 2) = (unsigned char)(shortValue & 0x00FF); //LSB
+
+			break;	
+	
+			case INT_32:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(int);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				intValue =  atoi(paramValue);
+				for(int i = 0 ; i < sizeof(intValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((intValue & maskIntValue) >> (24 - i*8));
+					maskIntValue >>= 8;
+				}
+				/*
+				*(stateMachine.msg.Data + 1) = (unsigned char)((intValue & 0xFF000000) >> 24); //MSB
+				*(stateMachine.msg.Data + 2) = (unsigned char)((intValue & 0x00FF0000) >> 16);
+				*(stateMachine.msg.Data + 3) = (unsigned char)((intValue & 0x0000FF00) >> 8); 
+				*(stateMachine.msg.Data + 4) = (unsigned char) (intValue & 0x000000FF); //LSB
+				*/
+			break;	
+	
+			case INT_64:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(long);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				longValue =  atol(paramValue);
+				for(int i = 0 ; i < sizeof(longValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((intValue & maskLongValue) >> (56 - i*8));
+					maskLongValue >>= 8;
+				}
+			break;	
+	
+/*			case FLOAT:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(float);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				floatValue =  strtof(paramValue, NULL);
+				for(int i = 0 ; i < sizeof(floatValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((floatValue & maskFloatValue) >> (24 - i*8));
+					maskFloatValue >>= 8;
+				}
+
+			break;	
+*/	
+/*			case DOUBLE:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(double);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				doubleValue =  strtod(paramValue, NULL);
+				for(int i = 0 ; i < sizeof(doubleValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((doubleValue & maskDoubleValue) >> (56 - i*8));
+					maskDoubleValue >>= 8;
+				}
+			break;
+*/
+			default:						
+				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
+					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
+				}
+			break;
+		}
+
+			//Create the msg buffer
+		createCurrentMsg();
+	}
+	return writeChar();	
+}
+
+/*==================================================*/
+/*==              createCurrentMsg                ==*/
+/*==================================================*/
+
+void RF_uartEngine_Tx::createCurrentMsg()
+{
+		//Create the msg buffer
+	stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
+	stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
+
+		//Setup the msg
+		 //Start Byte
+	*(stateMachine.msg.currentMsg) = 0x3A;
+		//Function Code
+	*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
+		//Length MSB 
+	*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); 
+		//Length LSB
+	*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF);
+
+		//Insert Data
+	if(stateMachine.msg.sizeData > 0) 	
+		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
+			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
+		}
+
+	CRC_compute();
+	*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
+	*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
+	*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
+	*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+}
 
 /*==================================================*/
 /*==                 writeChar                    ==*/
@@ -960,6 +1052,3 @@ char RF_uartEngine_Tx::writeChar()
 			return 0xFF;
 	}
 }
-
-
-

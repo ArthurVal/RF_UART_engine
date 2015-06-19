@@ -28,9 +28,6 @@ void RF_uartEngine::MSG_clear()
 {
   stateMachine.msg.ptrMsg = 0;
 
-	free(stateMachine.msg.currentMsg);
-	free(stateMachine.msg.Data);
-
 	stateMachine.msg.functionCode = stateMachine.msg.functionCode = 0xFF;
 
 	stateMachine.msg.length = stateMachine.msg.length = 0xFFFF;
