@@ -33,8 +33,8 @@ class RF_uartEngine_Tx : public RF_uartEngine
 */
 		char sendGetParam(unsigned char paramName);
 
-/*		char sendAnswerStartRF(bool OK);
-		char sendAnswerMoveAngle(bool OK);
+		char sendAnswerStartRF(bool OK);
+/*		char sendAnswerMoveAngle(bool OK);
 		char sendAnswerGetParam(char paramName, char paramFormat, unsigned int paramLength, double* paramValue);
 
 		char sendErrCRC();
