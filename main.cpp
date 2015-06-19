@@ -24,6 +24,9 @@ int main(){
 	dataToSend[9] = 0x00; //\0
 /**/
 
+
+
+
 	do{
 		text[i] = TxUART.sendStartRF();
 		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
@@ -41,13 +44,100 @@ int main(){
 
   MSG = TxUART.getMsg();
 	printf("-----------------------------------\n");
-	printf("Message 1 send:\n");
+	printf("Message 1 send: sendStartRF()\n");
 	for(int j = 0 ; j < MSG.sizeMsg ; j++)
 		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
 	printf("-----------------------------------\n");
 
-	i = 0;
 
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		//text[i] = TxUART.sendStartRF();
+		text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
+		//text[i] = TxUART.sendSetParam(NBR_PTS, INT_16, dataToSend,2);
+		//text[i] = TxUART.sendGetParam(ANGLE_PHI);
+		//text[i] = TxUART.sendAnswerStartRF(false);
+		//text[i] = TxUART.sendAnswerMoveAngle(true);
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 2 send: sendMoveAngle(ANGLE_PHI)\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+/*------------------------------------------------------------------------------------*/
+
+
+	i = 0;
+	do{
+		//text[i] = TxUART.sendStartRF();
+		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
+		text[i] = TxUART.sendSetParam(ANGLE_PHI, ASCII, dataToSend,10);
+		//text[i] = TxUART.sendGetParam(ANGLE_PHI);
+		//text[i] = TxUART.sendAnswerStartRF(false);
+		//text[i] = TxUART.sendAnswerMoveAngle(true);
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 3 send: sendSetParam(ANGLE_PHI, ASCII, dataToSend,10)\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		//text[i] = TxUART.sendStartRF();
+		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
+		//text[i] = TxUART.sendSetParam(NBR_PTS, INT_16, dataToSend,2);
+		text[i] = TxUART.sendGetParam(ANGLE_PHI);
+		//text[i] = TxUART.sendAnswerStartRF(false);
+		//text[i] = TxUART.sendAnswerMoveAngle(true);
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 4 send: sendGetParam(ANGLE_PHI)\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
 	do{
 		//text[i] = TxUART.sendStartRF();
 		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
@@ -67,7 +157,101 @@ int main(){
 
   MSG = TxUART.getMsg();
 	printf("-----------------------------------\n");
-	printf("Message 2 send:\n");
+	printf("Message 5 send: sendAnswerStartRF(false)\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		//text[i] = TxUART.sendStartRF();
+		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
+		//text[i] = TxUART.sendSetParam(NBR_PTS, INT_16, dataToSend,2);
+		//text[i] = TxUART.sendGetParam(ANGLE_PHI);
+		//text[i] = TxUART.sendAnswerStartRF(false);
+		text[i] = TxUART.sendAnswerMoveAngle(true);
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 6 send: sendAnswerMoveAngle(true)\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		text[i] = TxUART.sendErrCRC();
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 7 send: sendErrCRC()\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		text[i] = TxUART.sendErrUnknowMsg();
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 8 send: sendErrUnknowMsg()\n");
+	for(int j = 0 ; j < MSG.sizeMsg ; j++)
+		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	printf("-----------------------------------\n");
+
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		text[i] = TxUART.sendErrCarte();
+		i++;
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 9 send: sendErrCarte()\n");
 	for(int j = 0 ; j < MSG.sizeMsg ; j++)
 		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
 	printf("-----------------------------------\n");

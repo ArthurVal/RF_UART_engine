@@ -430,20 +430,88 @@ char RF_uartEngine_Tx::sendAnswerGetParam(
 }
 
 /*==================================================*/
+/*==                sendErrCRC                    ==*/
+/*==================================================*/
+
+char RF_uartEngine_Tx::sendErrCRC()
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_ERR_CRC;
+	
+			//Set length & sizeData & Data		
+		stateMachine.msg.length = stateMachine.msg.sizeData = 0;
+
+			//Setup the msg		
+		createCurrentMsg();
+	}
+	return writeChar();	
+}
+
+/*==================================================*/
+/*==           sendErrUnknowMsg                   ==*/
+/*==================================================*/
+
+char RF_uartEngine_Tx::sendErrUnknowMsg()
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_ERR_MSG_UNKNOW;
+	
+			//Set length & sizeData & Data		
+		stateMachine.msg.length = stateMachine.msg.sizeData = 0;
+
+			//Setup the msg		
+		createCurrentMsg();
+	}
+	return writeChar();	
+}
+
+/*==================================================*/
+/*==               sendErrCarte                   ==*/
+/*==================================================*/
+
+char RF_uartEngine_Tx::sendErrCarte()
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_ERR_CARTE;
+	
+			//Set length & sizeData & Data		
+		stateMachine.msg.length = stateMachine.msg.sizeData = 0;
+
+			//Setup the msg		
+		createCurrentMsg();
+	}
+	return writeChar();	
+}
+
+/*==================================================*/
 /*==              createCurrentMsg                ==*/
 /*==================================================*/
 
 void RF_uartEngine_Tx::createCurrentMsg()
 {
-		//Create the msg buffer
+		//Allocate the msg buffer space
 	stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
 	stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
 
 		//Setup the msg
 		 //Start Byte
 	*(stateMachine.msg.currentMsg) = 0x3A;
+
 		//Function Code
 	*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
+
 		//Length MSB 
 	*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); 
 		//Length LSB
@@ -455,9 +523,14 @@ void RF_uartEngine_Tx::createCurrentMsg()
 			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
 		}
 
-	CRC_compute();
-	*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
-	*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
+	CRC_compute(); //Compute CRC
+
+		//CRC MSB
+	*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8);
+		//CRC LSB
+	*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF);
+
+		//Stop Bytes
 	*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
 	*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
 }

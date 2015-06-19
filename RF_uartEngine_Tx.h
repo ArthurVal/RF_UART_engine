@@ -28,6 +28,8 @@ class RF_uartEngine_Tx : public RF_uartEngine
     bool msgSent();
     bool transmitError();
 
+		msg_uart getMsg(){return stateMachine.msg;}
+
 		char sendStartRF();
 		char sendMoveAngle(unsigned char angleName);
 		char sendSetParam(unsigned char paramName, unsigned char paramFormat, const char* paramValue, unsigned short paramValueSize);
@@ -39,13 +41,9 @@ class RF_uartEngine_Tx : public RF_uartEngine
 		char sendAnswerMoveAngle(bool OK);
 		char sendAnswerGetParam(unsigned char paramName, unsigned char paramFormat, const char* paramValue, unsigned short paramValueSize);
 
-/*		char sendErrCRC();
+		char sendErrCRC();
 		char sendErrUnknowMsg();
 		char sendErrCarte();
-*/
-
-
-		msg_uart getMsg(){return stateMachine.msg;}
 
 }; // class RF_uartEngine_Tx
 #endif // RF_UARTENGINE_TX_H
