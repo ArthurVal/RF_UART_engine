@@ -25,6 +25,7 @@ class RF_uartEngine_Tx : public RF_uartEngine
 		//Methods
 
     bool msgSent();
+    bool transmitError();
 
 		char sendStartRF();
 		char sendMoveAngle(unsigned char angleName);
@@ -34,8 +35,8 @@ class RF_uartEngine_Tx : public RF_uartEngine
 		char sendGetParam(unsigned char paramName);
 
 		char sendAnswerStartRF(bool OK);
-/*		char sendAnswerMoveAngle(bool OK);
-		char sendAnswerGetParam(char paramName, char paramFormat, unsigned int paramLength, double* paramValue);
+		char sendAnswerMoveAngle(bool OK);
+/*		char sendAnswerGetParam(char paramName, char paramFormat, unsigned int paramLength, double* paramValue);
 
 		char sendErrCRC();
 		char sendErrUnknowMsg();

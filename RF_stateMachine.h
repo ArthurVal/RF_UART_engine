@@ -94,8 +94,7 @@
 #define ID_NBR_PTS 0x05
 #define ID_ANGLE_PHI 0x06
 #define ID_ANGLE_THETA 0x07
-#define ID_INTENSITY_THETA 0x08
-#define ID_INTENSITY_PHI 0x09
+#define ID_INTENSITY 0x08
 
 #define ID_ASCII 0x00
 #define ID_INT_8 0x10
@@ -130,8 +129,7 @@
 #define NBR_PTS 0x05
 #define ANGLE_PHI 0x06
 #define ANGLE_THETA 0x07
-#define INTENSITY_THETA 0x08
-#define INTENSITY_PHI 0x09
+#define INTENSITY 0x08
 
 /*==========================================*/	
 /*         paramFormat definition           */

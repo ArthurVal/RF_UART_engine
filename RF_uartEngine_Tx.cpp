@@ -14,6 +14,14 @@ bool RF_uartEngine_Tx::msgSent()
 	return stateMachine.TX_msgEnd;	
 }
 
+bool RF_uartEngine_Tx::transmitError()
+{
+	if(stateMachine.state == STATE_ERR)
+		return true;	
+	else
+		return false;			
+}
+
 /*==================================================*/
 /*==                sendStartRF                   ==*/
 /*==================================================*/
@@ -310,11 +318,10 @@ char RF_uartEngine_Tx::sendAnswerStartRF(bool OK)
 		*(stateMachine.msg.currentMsg) = 0x3A;
 		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
 		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
-		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB
-		
+		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB		
 		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
 			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
-		}		
+		}
 		CRC_compute();
 		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
 		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
@@ -324,7 +331,43 @@ char RF_uartEngine_Tx::sendAnswerStartRF(bool OK)
 	return writeChar();	
 }
 
+/*==================================================*/
+/*==           sendAnswerMoveAngle                ==*/
+/*==================================================*/
 
+char RF_uartEngine_Tx::sendAnswerMoveAngle(bool OK)
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_ANS_MOVE;
+	
+			//Set length & sizeData & Data		
+		stateMachine.msg.length = stateMachine.msg.sizeData = 1;
+		*(stateMachine.msg.Data) = (char)OK;
+
+			//Create the msg buffer
+		stateMachine.msg.sizeMsg = (stateMachine.msg.length + 8);
+		stateMachine.msg.currentMsg = (unsigned char*)realloc(stateMachine.msg.currentMsg , sizeof(unsigned char) * (stateMachine.msg.sizeMsg));
+
+			//Setup the msg
+		*(stateMachine.msg.currentMsg) = 0x3A;
+		*(stateMachine.msg.currentMsg + 1) = stateMachine.msg.functionCode;
+		*(stateMachine.msg.currentMsg + 2) = (stateMachine.msg.length >> 8); //MSB
+		*(stateMachine.msg.currentMsg + 3) = (stateMachine.msg.length & 0x00FF); //LSB		
+		for(int i = 0 ; i < (stateMachine.msg.length)  ; ++i){
+			*(stateMachine.msg.currentMsg + 4 + i) = *(stateMachine.msg.Data + i);
+		}
+		CRC_compute();
+		*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8); //MSB
+		*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF); //LSB
+		*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
+		*(stateMachine.msg.currentMsg + 7 + stateMachine.msg.length) = 0x0A;
+	}
+	return writeChar();	
+}
 
 
 /*==================================================*/
@@ -341,7 +384,7 @@ char RF_uartEngine_Tx::writeChar()
 		case STATE_INIT:
 
 				/*-DEBUG PURPOSE-*/
-		printf("------------------------------------\n");
+/*		printf("------------------------------------\n");
 		printf("DEBUG:\n");
 		printf("Function code = %X\n", stateMachine.msg.functionCode);
 		printf("Length =        %X\n", stateMachine.msg.length);
@@ -364,7 +407,7 @@ char RF_uartEngine_Tx::writeChar()
 		else
 			printf("No Data\n");
 		printf("------------------------------------\n");
-
+*/
 
 
 			stateMachine.msg.ptrMsg = 0;
