@@ -24,17 +24,26 @@ class RF_uartEngine_Tx : public RF_uartEngine
 		RF_uartEngine_Tx();
 
 		//Methods
-
     bool msgSent();
     bool transmitError();
 
 		msg_uart getMsg(){return stateMachine.msg;}
+		void clearMsg();
 
 		char sendStartRF();
 		char sendMoveAngle(unsigned char angleName);
-		char sendSetParam(unsigned char paramName, unsigned char paramFormat, const char* paramValue, unsigned short paramValueSize);
-/*		char sendSetMultiParam(unsigned int nParam, const unsigned char* paramName, const unsigned char* paramFormat, const char* paramValue, unsigned short* paramValueSize);
-*/
+
+		char sendSetParam(unsigned char paramName, 
+		                  unsigned char paramFormat, 
+		                  const char* paramValue, 
+		                  unsigned short paramValueSize);
+
+		char sendSetMultiParam(unsigned int nParam,
+		                       const unsigned char* paramName, 
+		                       const unsigned char* paramFormat, 
+		                       char** paramValue, 
+		                       unsigned short* paramValueSize);
+
 		char sendGetParam(unsigned char paramName);
 
 		char sendAnswerStartRF(bool OK);

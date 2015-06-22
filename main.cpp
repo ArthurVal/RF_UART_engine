@@ -23,6 +23,27 @@ int main(){
 	dataToSend[8] = 0x39; //9
 	dataToSend[9] = 0x00; //\0
 /**/
+	char* dataToSendTestValue[20];
+	unsigned char dataToSendTestName[20];
+	unsigned char dataToSendTestFormat[20];
+	unsigned short dataToSendTestSize[20];
+
+	dataToSendTestValue[0] = "123456789";
+	dataToSendTestName[0] = NBR_PTS;
+	dataToSendTestFormat[0] = ASCII;
+	dataToSendTestSize[0] = 9;
+
+
+	dataToSendTestValue[1] = "65535";
+	dataToSendTestName[1] = NBR_PTS;
+	dataToSendTestFormat[1] = INT_64;
+	dataToSendTestSize[1] = 2;
+
+	dataToSendTestValue[2] = "651981116519116516198";
+	dataToSendTestName[2] = NBR_PTS;
+	dataToSendTestFormat[2] = ASCII;
+	dataToSendTestSize[2] = 21;
+
 
 
 
@@ -240,6 +261,7 @@ int main(){
 	do{
 		text[i] = TxUART.sendErrCarte();
 		i++;
+
 	}while(!TxUART.msgSent() && !TxUART.transmitError());
  
 	if(TxUART.transmitError()){
@@ -252,9 +274,46 @@ int main(){
   MSG = TxUART.getMsg();
 	printf("-----------------------------------\n");
 	printf("Message 9 send: sendErrCarte()\n");
-	for(int j = 0 ; j < MSG.sizeMsg ; j++)
-		printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+	for(int j = 0 ; j < i ; j++)
+		if(j < MSG.sizeMsg)
+			printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+		else
+			printf("SendStartRF | CurrentMsg : %X | - \n", text[j]);
+		
 	printf("-----------------------------------\n");
+
+
+/*------------------------------------------------------------------------------------*/
+
+	i = 0;
+	do{
+		text[i] = TxUART.sendSetMultiParam(3,
+		                                   dataToSendTestName,
+		                                   dataToSendTestFormat,
+		                                   dataToSendTestValue,
+		                                   dataToSendTestSize);
+		i++;
+
+	}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 
+	if(TxUART.transmitError()){
+		printf("-----------------------------------\n");
+		printf("---   TRANSMIT ERROR DETECTED   ---\n");
+		printf("-----------------------------------\n");
+		return -1;
+	}
+
+  MSG = TxUART.getMsg();
+	printf("-----------------------------------\n");
+	printf("Message 10 send: sendSetMultiParam()\n");
+	for(int j = 0 ; j < i ; j++)
+		if(j < MSG.sizeMsg)
+			printf("SendStartRF | CurrentMsg : %X | %X \n", text[j], MSG.currentMsg[j]);
+		else
+			printf("SendStartRF | CurrentMsg : %X | - \n", text[j]);
+		
+	printf("-----------------------------------\n");
+
 
 	return 0;
 }

@@ -22,6 +22,15 @@ bool RF_uartEngine_Tx::transmitError()
 		return false;			
 }
 
+void RF_uartEngine_Tx::clearMsg()
+{		
+	MSG_clear();
+	if(stateMachine.state != STATE_INIT && (stateMachine.status == STATUS_WAIT || stateMachine.status == STATUS_WRITING)){
+		stateMachine.state = STATE_INIT;
+		stateMachine.status = STATUS_WAIT;
+	}		
+}
+
 /*==================================================*/
 /*==                sendStartRF                   ==*/
 /*==================================================*/
@@ -121,6 +130,7 @@ char RF_uartEngine_Tx::sendSetParam(
 		switch(paramFormat){
 			case ASCII:				
 				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
 					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
@@ -168,7 +178,7 @@ char RF_uartEngine_Tx::sendSetParam(
 				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 				longValue =  atol(paramValue);
 				for(int i = 0 ; i < sizeof(longValue); ++i){
-					*(stateMachine.msg.Data + i + 1) = (unsigned char)((intValue & maskLongValue) >> (56 - i*8));
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((longValue & maskLongValue) >> (56 - i*8));
 					maskLongValue >>= 8;
 				}
 			break;	
@@ -216,7 +226,155 @@ char RF_uartEngine_Tx::sendSetParam(
 /*==            sendSetMultiParam                 ==*/
 /*==================================================*/
 
-//TODO: LA FLEMME ~_~
+char RF_uartEngine_Tx::sendSetMultiParam(
+                                    unsigned int nParam, 
+                                    const unsigned char* paramName, 
+                                    const unsigned char* paramFormat, 
+                                    char** paramValue, 
+                                    unsigned short* paramValueSize
+                                   )
+{
+	if(stateMachine.status == STATUS_WAIT){
+		//Message creation
+		MSG_clear();
+
+		char charValue;
+
+		short shortValue;
+
+		int intValue;
+		unsigned int maskIntValue = 0xFF000000;
+
+		long longValue;
+		unsigned long maskLongValue = 0xFF00000000000000;
+
+		float floatValue;
+		unsigned int maskFloatValue = 0xFF000000;
+
+		double doubleValue;
+		unsigned long maskDoubleValue = 0xFF00000000000000;
+
+			//Set function code
+		stateMachine.msg.functionCode = FCT_SET_M_PARAM;
+
+			//Set ID & nbrParam
+		stateMachine.msg.nbrParam = nParam;
+		for(int i = 0 ; i < stateMachine.msg.nbrParam ; ++i)	
+			stateMachine.msg.ID[i] = *(paramFormat + i) | *(paramName + i);
+
+			//Set length & sizeData & Data				
+		stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + stateMachine.msg.nbrParam;
+		stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+
+				//Data 0 = nParam
+		*(stateMachine.msg.Data) = stateMachine.msg.nbrParam;
+
+				//Data 1 - nParam = ID
+		for(int i = 0 ; i < stateMachine.msg.nbrParam ; ++i)
+			*(stateMachine.msg.Data + 1 + i) = stateMachine.msg.ID[i];
+
+		unsigned int previousSize = stateMachine.msg.sizeData;
+
+				//Data Value TODO
+		for(int i = 0 ; i < stateMachine.msg.nbrParam ; ++i){
+			maskIntValue = 0xFF000000;
+			maskLongValue = 0xFF00000000000000;	
+			maskFloatValue = 0xFF000000;
+			maskDoubleValue = 0xFF00000000000000;
+		
+			switch(*(paramFormat + i)){
+				case ASCII:				
+					stateMachine.msg.length = stateMachine.msg.sizeData += *(paramValueSize + i) + sizeof(char); //Add char null at the end
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					for(int j = 0 ; j < (*(paramValueSize + i))  ; j++){
+						*(stateMachine.msg.Data + previousSize + j) = *(paramValue[i] + j );
+					}
+					*(stateMachine.msg.Data + stateMachine.msg.sizeData - 1) = 0x00; //Add null char at the end
+				break;	
+		
+				case INT_8:
+					stateMachine.msg.length = stateMachine.msg.sizeData += sizeof(char);
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					charValue = (char) atoi(paramValue[i]);
+					*(stateMachine.msg.Data + previousSize) = charValue;
+				break;	
+	
+				case INT_16:
+					stateMachine.msg.length = stateMachine.msg.sizeData += sizeof(short);
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					shortValue = (short) atoi(paramValue[i]);
+					*(stateMachine.msg.Data + previousSize) = (unsigned char)((shortValue & 0xFF00) >> 8); //MSB
+					*(stateMachine.msg.Data + previousSize + 1) = (unsigned char)(shortValue & 0x00FF); //LSB
+
+				break;	
+	
+				case INT_32:
+					stateMachine.msg.length = stateMachine.msg.sizeData += sizeof(int);
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					intValue =  atoi(paramValue[i]);
+					for(int j = 0 ; j < sizeof(intValue); ++j){
+						*(stateMachine.msg.Data + previousSize + j) = (unsigned char)((intValue & maskIntValue) >> (24 - j*8));
+						maskIntValue >>= 8;
+					}
+				/*
+				*(stateMachine.msg.Data + 1) = (unsigned char)((intValue & 0xFF000000) >> 24); //MSB
+				*(stateMachine.msg.Data + 2) = (unsigned char)((intValue & 0x00FF0000) >> 16);
+				*(stateMachine.msg.Data + 3) = (unsigned char)((intValue & 0x0000FF00) >> 8); 
+				*(stateMachine.msg.Data + 4) = (unsigned char) (intValue & 0x000000FF); //LSB
+				*/
+				break;	
+	
+				case INT_64:
+					stateMachine.msg.length = stateMachine.msg.sizeData += sizeof(long);
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					longValue =  atol(paramValue[i]);
+					for(int j = 0 ; j < sizeof(longValue); ++j){
+						*(stateMachine.msg.Data + previousSize + j) = (unsigned char)((longValue & maskLongValue) >> (56 - j*8));
+						maskLongValue >>= 8;
+					}
+				break;	
+	
+/*			case FLOAT:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(float);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				floatValue =  strtof(paramValue, NULL);
+				for(int i = 0 ; i < sizeof(floatValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((floatValue & maskFloatValue) >> (24 - i*8));
+					maskFloatValue >>= 8;
+				}
+
+			break;	
+*/	
+/*			case DOUBLE:
+				stateMachine.msg.length = stateMachine.msg.sizeData = sizeof(char) + sizeof(double);
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
+				doubleValue =  strtod(paramValue, NULL);
+				for(int i = 0 ; i < sizeof(doubleValue); ++i){
+					*(stateMachine.msg.Data + i + 1) = (unsigned char)((doubleValue & maskDoubleValue) >> (56 - i*8));
+					maskDoubleValue >>= 8;
+				}
+			break;
+*/
+				default:						
+					stateMachine.msg.length = stateMachine.msg.sizeData += *(paramValueSize + i) + sizeof(char); //Add char null at the end
+					stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
+					for(int j = 0 ; j < (*(paramValueSize + i))  ; j++){
+						*(stateMachine.msg.Data + previousSize + j) = *(paramValue[i] + j );
+					}
+					*(stateMachine.msg.Data + stateMachine.msg.sizeData - 1) = 0x00; //Add null char at the end
+				break;
+			}
+
+			previousSize = stateMachine.msg.sizeData;
+		} //for all params
+
+			//Setup the msg
+		createCurrentMsg();
+	}
+	return writeChar();	
+}
 
 /*==================================================*/
 /*==               sendGetParam                   ==*/
@@ -574,11 +732,13 @@ char RF_uartEngine_Tx::writeChar()
 		printf("------------------------------------\n");
 */
 
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 
 			stateMachine.msg.ptrMsg = 0;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x3A){
 				stateMachine.state = STATE_FCT_BYTE;		
-				stateMachine.status = STATUS_WRITING;		
+				stateMachine.status = STATUS_WRITING;
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 			}else{				
 				stateMachine.state = STATE_ERR;		
@@ -593,6 +753,9 @@ char RF_uartEngine_Tx::writeChar()
 			//          STATE_FCT_BYTE        //
 			////////////////////////////////////
 		case STATE_FCT_BYTE:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 1;
 			switch(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg)){
 				case FCT_START_RF:
@@ -668,15 +831,23 @@ char RF_uartEngine_Tx::writeChar()
 			////////////////////////////////////
 			//           STATE_CRC            //
 			////////////////////////////////////
-		case STATE_CRC_1:
-			stateMachine.msg.ptrMsg++;
-			stateMachine.state = STATE_CRC_2;		
-			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+		case STATE_CRC_1:		
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
+			stateMachine.msg.ptrMsg++;	
+			stateMachine.state = STATE_CRC_2;
+			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);	
 		break;
 
 		case STATE_CRC_2:
-			stateMachine.msg.ptrMsg++;
-			stateMachine.state = STATE_STOP_BYTE_1;		
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
+			if(stateMachine.status != STATUS_BLOCKED){
+				stateMachine.msg.ptrMsg++;
+				stateMachine.state = STATE_STOP_BYTE_1;	
+			}
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
@@ -685,10 +856,15 @@ char RF_uartEngine_Tx::writeChar()
 			//          STATE_STOP_BYTE       //
 			////////////////////////////////////
 		case STATE_STOP_BYTE_1:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+			
 			stateMachine.msg.ptrMsg++;
+
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x0D){
-				stateMachine.state = STATE_STOP_BYTE_2;		
-				stateMachine.status = STATUS_WRITING;		
+				if(stateMachine.status != STATUS_BLOCKED){				
+					stateMachine.state = STATE_STOP_BYTE_2;
+				}		
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 			}else{				
 				stateMachine.state = STATE_STOP_BYTE_2;		
@@ -699,13 +875,18 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_STOP_BYTE_2:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg++;
+
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x0A){
 				if(stateMachine.status == STATUS_WRITING){
 					stateMachine.state = STATE_INIT;		
 					stateMachine.status = STATUS_WAIT;
 				}else{
-					stateMachine.state = STATE_ERR;					
+					if(stateMachine.status != STATUS_BLOCKED)				
+						stateMachine.state = STATE_ERR;					
 				}
 				stateMachine.TX_msgEnd = true;				
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
@@ -722,10 +903,15 @@ char RF_uartEngine_Tx::writeChar()
 			//          STATE_START_RF        //
 			////////////////////////////////////
 		case STATE_START_RF_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);		
+			
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
-				stateMachine.state = STATE_START_RF_2;		
-				stateMachine.status = STATUS_WRITING;		
+				if(stateMachine.status != STATUS_BLOCKED){				
+					stateMachine.state = STATE_START_RF_2;		
+					stateMachine.status = STATUS_WRITING;
+				}		
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 			}else{				
 				stateMachine.state = STATE_START_RF_2;
@@ -735,10 +921,15 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_START_RF_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
-				stateMachine.state = STATE_CRC_1;		
-				stateMachine.status = STATUS_WRITING;		
+				if(stateMachine.status != STATUS_BLOCKED){				
+					stateMachine.state = STATE_CRC_1;		
+					stateMachine.status = STATUS_WRITING;	
+				}	
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 			}else{				
 				stateMachine.state = STATE_CRC_1;
@@ -753,6 +944,9 @@ char RF_uartEngine_Tx::writeChar()
 			//          STATE_MOVE_PHI        //
 			////////////////////////////////////
 		case STATE_MOVE_PHI_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_MOVE_PHI_2;		
@@ -766,6 +960,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_MOVE_PHI_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_CRC_1;		
@@ -781,6 +978,9 @@ char RF_uartEngine_Tx::writeChar()
 			//        STATE_MOVE_THETA        //
 			////////////////////////////////////
 		case STATE_MOVE_THETA_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_MOVE_THETA_2;
@@ -793,6 +993,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_MOVE_THETA_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_CRC_1;		
@@ -810,24 +1013,36 @@ char RF_uartEngine_Tx::writeChar()
 			//         STATE_SET_PARAM        //
 			////////////////////////////////////
 		case STATE_SET_PARAM_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			stateMachine.state = STATE_SET_PARAM_2;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_PARAM_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			stateMachine.state = STATE_SET_PARAM_3;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_PARAM_3: //ID
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			stateMachine.state = STATE_SET_PARAM_N;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_PARAM_N:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg++;
 			if(stateMachine.msg.ptrMsg < stateMachine.msg.length + 3)
 				stateMachine.state = STATE_SET_PARAM_N;
@@ -842,38 +1057,56 @@ char RF_uartEngine_Tx::writeChar()
 			//     STATE_SET_MULTI_PARAM      //
 			////////////////////////////////////
 		case STATE_SET_MULTI_PARAM_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			stateMachine.state = STATE_SET_MULTI_PARAM_2;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_MULTI_PARAM_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			stateMachine.state = STATE_SET_MULTI_PARAM_3;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_MULTI_PARAM_3: //NB PARAM
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			stateMachine.state = STATE_SET_MULTI_PARAM_M;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_MULTI_PARAM_M: //IDs
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg++;
-			if(stateMachine.msg.ptrMsg < stateMachine.msg.nbrParam + 4)
+			if(stateMachine.msg.ptrMsg < (stateMachine.msg.nbrParam + 4))
 				stateMachine.state = STATE_SET_MULTI_PARAM_M;
 			else
 				stateMachine.state = STATE_SET_MULTI_PARAM_N;
-
+		
+			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_SET_MULTI_PARAM_N:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg++;
 			if(stateMachine.msg.ptrMsg < stateMachine.msg.length + 3)
 				stateMachine.state = STATE_SET_MULTI_PARAM_N;
 			else
 				stateMachine.state = STATE_CRC_1;
+		
+			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 
@@ -881,6 +1114,9 @@ char RF_uartEngine_Tx::writeChar()
 			//         STATE_GET_PARAM        //
 			////////////////////////////////////
 		case STATE_GET_PARAM_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_GET_PARAM_2;
@@ -893,6 +1129,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_GET_PARAM_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x01){
 				stateMachine.state = STATE_GET_PARAM_3;
@@ -905,6 +1144,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_GET_PARAM_3: //ID
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			stateMachine.state = STATE_CRC_1;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
@@ -915,6 +1157,9 @@ char RF_uartEngine_Tx::writeChar()
 			//        STATE_ACK_START_RF      //
 			////////////////////////////////////
 		case STATE_ACK_START_RF_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_ACK_START_RF_2;
@@ -927,6 +1172,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ACK_START_RF_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x01){
 				stateMachine.state = STATE_ACK_START_RF_3;
@@ -939,6 +1187,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ACK_START_RF_3: //ACK
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) <= 0x01){
 				stateMachine.state = STATE_CRC_1;
@@ -955,6 +1206,9 @@ char RF_uartEngine_Tx::writeChar()
 			//          STATE_ACK_MOVE        //
 			////////////////////////////////////
 		case STATE_ACK_MOVE_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_ACK_MOVE_2;
@@ -967,6 +1221,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ACK_MOVE_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x01){
 				stateMachine.state = STATE_ACK_MOVE_3;
@@ -979,6 +1236,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ACK_MOVE_3: //ACK
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) <= 0x01){
 				stateMachine.state = STATE_CRC_1;
@@ -995,24 +1255,36 @@ char RF_uartEngine_Tx::writeChar()
 			//      STATE_ANS_GET_PARAM       //
 			////////////////////////////////////
 		case STATE_ANS_GET_PARAM_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			stateMachine.state = STATE_ANS_GET_PARAM_2;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_ANS_GET_PARAM_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			stateMachine.state = STATE_ANS_GET_PARAM_3;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_ANS_GET_PARAM_3: //ID
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 4;
 			stateMachine.state = STATE_ANS_GET_PARAM_N;		
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 		case STATE_ANS_GET_PARAM_N: //PARAM
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg++;
 			if(stateMachine.msg.ptrMsg < stateMachine.msg.length + 3)
 				stateMachine.state = STATE_ANS_GET_PARAM_N;
@@ -1025,6 +1297,9 @@ char RF_uartEngine_Tx::writeChar()
 			//         STATE_ERR_CRC          //
 			////////////////////////////////////
 		case STATE_ERR_CRC_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_ERR_CRC_2;	
@@ -1037,6 +1312,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ERR_CRC_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_CRC_1;	
@@ -1053,6 +1331,9 @@ char RF_uartEngine_Tx::writeChar()
 			//      STATE_ERR_FCT_UNKNOW      //
 			////////////////////////////////////
 		case STATE_ERR_FCT_UNKNOW_1: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_ERR_FCT_UNKNOW_2;	
@@ -1065,6 +1346,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ERR_FCT_UNKNOW_2: //LEN
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_CRC_1;	
@@ -1081,6 +1365,9 @@ char RF_uartEngine_Tx::writeChar()
 			//        STATE_ERR_CARTE         //
 			////////////////////////////////////
 		case STATE_ERR_CARTE_1:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 2;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_ERR_CARTE_2;	
@@ -1093,6 +1380,9 @@ char RF_uartEngine_Tx::writeChar()
 		break;
 
 		case STATE_ERR_CARTE_2:
+			if(stateMachine.status == STATUS_BLOCKED)
+				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
+
 			stateMachine.msg.ptrMsg = 3;
 			if(*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) == 0x00){
 				stateMachine.state = STATE_CRC_1;	

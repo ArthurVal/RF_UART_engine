@@ -17,7 +17,10 @@ RF_uartEngine::RF_uartEngine()
 
 	stateMachine.msg.crc_msg = stateMachine.msg.crc_compute = 0xFFFF;
 
-	stateMachine.status = STATUS_WAIT;
+	stateMachine.RX_msgRdy = false;
+	stateMachine.TX_msgEnd = false;
+
+	stateMachine.status = stateMachine.previousStatus = STATUS_WAIT;
 }
 
 /*==================================================*/
@@ -28,9 +31,9 @@ void RF_uartEngine::MSG_clear()
 {
   stateMachine.msg.ptrMsg = 0;
 
-	stateMachine.msg.functionCode = stateMachine.msg.functionCode = 0xFF;
+	stateMachine.msg.functionCode = 0xFF;
 
-	stateMachine.msg.length = stateMachine.msg.length = 0xFFFF;
+	stateMachine.msg.length = 0xFFFF;
 
 	stateMachine.msg.nbrParam = 0x00;
 
@@ -75,4 +78,20 @@ void RF_uartEngine::CRC_compute()
 bool RF_uartEngine::CRC_check()
 {
 	return (stateMachine.msg.crc_compute == stateMachine.msg.crc_msg);
+}
+
+/*==================================================*/
+/*==              lockStateMachine                ==*/
+/*==================================================*/
+
+void RF_uartEngine::lockStateMachine(bool lock)
+{
+	if(stateMachine.status != STATUS_BLOCKED)
+		stateMachine.previousStatus = stateMachine.status;
+
+	if(lock){
+		stateMachine.status = STATUS_BLOCKED;
+	}else{
+		stateMachine.status = stateMachine.previousStatus;		
+	}		
 }

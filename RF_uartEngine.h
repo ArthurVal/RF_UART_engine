@@ -28,6 +28,8 @@ class RF_uartEngine
 		//Attributs
 
 		//Methods
+			//Block the state Machine if true. Unlock it if false.
+		void lockStateMachine(bool lock);
 		inline state_machine getStateMachine(){return stateMachine;}
 
 }; // class RF_uartEngine

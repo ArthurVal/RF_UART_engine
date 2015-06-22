@@ -109,13 +109,15 @@
 /*==========================================*/
 
 #define STATUS_WAIT 0
-#define STATUS_WRITING 1
-#define STATUS_ERR_START_BYTE 2
-#define STATUS_ERR_STOP_BYTE 3
-#define STATUS_ERR_FCT_UNKNOW 4
-#define STATUS_ERR_LEN 5
-#define STATUS_ERR_ACK 6
-#define STATUS_ERR_STATE 7
+#define STATUS_BLOCKED 1
+#define STATUS_WRITING 2
+
+#define STATUS_ERR_START_BYTE -1
+#define STATUS_ERR_STOP_BYTE -2
+#define STATUS_ERR_FCT_UNKNOW -3
+#define STATUS_ERR_LEN -4
+#define STATUS_ERR_ACK -5
+#define STATUS_ERR_STATE -6
 
 /*==========================================*/	
 /*    angleName & paramName definition      */
@@ -178,7 +180,8 @@ typedef struct {
 
 	msg_uart msg;
 
-	int status; 
+	int status;
+ 	int previousStatus;
 		
 } state_machine; 
 
