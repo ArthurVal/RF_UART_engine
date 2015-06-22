@@ -5,7 +5,7 @@ RF_uartEngine::RF_uartEngine()
   stateMachine.state = STATE_INIT;
 
 	stateMachine.msg.ptrMsg = 0;
-	stateMachine.msg.sizeMsg = 1;
+	stateMachine.msg.sizeMsg = 4;
 	stateMachine.msg.currentMsg = (unsigned char*)malloc(sizeof(unsigned char) * stateMachine.msg.sizeMsg);
 ;
 
@@ -17,6 +17,7 @@ RF_uartEngine::RF_uartEngine()
 
 	stateMachine.msg.crc_msg = stateMachine.msg.crc_compute = 0xFFFF;
 
+	stateMachine.msgRead = true;
 	stateMachine.RX_msgRdy = false;
 	stateMachine.TX_msgEnd = false;
 
@@ -77,6 +78,8 @@ void RF_uartEngine::CRC_compute()
 
 bool RF_uartEngine::CRC_check()
 {
+	printf("CRC Compute : %X\n", stateMachine.msg.crc_compute);
+	printf("CRC MSG : %X\n", stateMachine.msg.crc_msg);
 	return (stateMachine.msg.crc_compute == stateMachine.msg.crc_msg);
 }
 
@@ -94,4 +97,19 @@ void RF_uartEngine::lockStateMachine(bool lock)
 	}else{
 		stateMachine.status = stateMachine.previousStatus;		
 	}		
+}
+
+/*==================================================*/
+/*==                  getStatus                   ==*/
+/*==================================================*/
+
+int RF_uartEngine::getStatus()
+{
+	int statusTmp = stateMachine.status;
+
+		//Unlock Error status if people read status
+	if(stateMachine.status < 0) 
+		stateMachine.status = STATUS_WAIT;	
+         
+	return statusTmp;
 }

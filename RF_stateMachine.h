@@ -58,6 +58,11 @@
 #define STATE_CRC_1 40
 #define STATE_CRC_2 41
 
+	//Rx specials States
+#define STATE_LEN_1 42
+#define STATE_LEN_2 43
+#define STATE_ERR_END 101
+
 		//Error states
 #define STATE_ERR 100
 
@@ -111,6 +116,7 @@
 #define STATUS_WAIT 0
 #define STATUS_BLOCKED 1
 #define STATUS_WRITING 2
+#define STATUS_READING 3
 
 #define STATUS_ERR_START_BYTE -1
 #define STATUS_ERR_STOP_BYTE -2
@@ -118,6 +124,8 @@
 #define STATUS_ERR_LEN -4
 #define STATUS_ERR_ACK -5
 #define STATUS_ERR_STATE -6
+#define STATUS_ERR_CRC -7
+#define STATUS_ERR_INTERNAL -8
 
 /*==========================================*/	
 /*    angleName & paramName definition      */
@@ -163,7 +171,7 @@ typedef struct {
 	unsigned char nbrParam;
 	unsigned char ID[256];
 
-		//Everything after Length in the msg
+		//Everything but the Header & CRC
 	unsigned int sizeData; 
 	unsigned char* Data;
 
@@ -173,8 +181,9 @@ typedef struct {
 } msg_uart; 
 
 typedef struct {
-	unsigned int state;	
-
+	unsigned int state;
+	
+	bool msgRead;
 	bool RX_msgRdy;
 	bool TX_msgEnd;
 

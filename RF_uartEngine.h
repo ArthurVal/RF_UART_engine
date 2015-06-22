@@ -4,6 +4,7 @@
 //include
 #include "RF_stateMachine.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 class RF_uartEngine
 {
@@ -25,12 +26,16 @@ class RF_uartEngine
 		//Constructor & Destructor
 		RF_uartEngine();
 		inline ~RF_uartEngine() {free(stateMachine.msg.currentMsg); free(stateMachine.msg.Data);};
-		//Attributs
 
 		//Methods
 			//Block the state Machine if true. Unlock it if false.
 		void lockStateMachine(bool lock);
-		inline state_machine getStateMachine(){return stateMachine;}
+	
+		inline msg_uart getMsg()               {stateMachine.msgRead = true;		                         
+		                                       return stateMachine.msg;
+														               }
+		inline state_machine getStateMachine() {return stateMachine;}
+		int getStatus();
 
 }; // class RF_uartEngine
 #endif // RF_UARTENGINE_H

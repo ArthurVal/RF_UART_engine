@@ -5,12 +5,11 @@
 RF_uartEngine_Tx::RF_uartEngine_Tx()
 : RF_uartEngine()
 {
-	stateMachine.state = STATE_INIT;
 }
-
 
 bool RF_uartEngine_Tx::msgSent()
 {
+	stateMachine.msgRead = false;
 	return stateMachine.TX_msgEnd;	
 }
 
@@ -844,10 +843,9 @@ char RF_uartEngine_Tx::writeChar()
 			if(stateMachine.status == STATUS_BLOCKED)
 				return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 
-			if(stateMachine.status != STATUS_BLOCKED){
-				stateMachine.msg.ptrMsg++;
-				stateMachine.state = STATE_STOP_BYTE_1;	
-			}
+			stateMachine.msg.ptrMsg++;
+			stateMachine.state = STATE_STOP_BYTE_1;
+
 			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 

@@ -2,6 +2,8 @@
 #define RF_UARTENGINE_RX_H 
 
 #include "RF_uartEngine.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 class RF_uartEngine_Rx : public RF_uartEngine
 {
@@ -20,9 +22,9 @@ class RF_uartEngine_Rx : public RF_uartEngine
 		RF_uartEngine_Rx();
 
 		//Methods
-		bool readChar(char);	
-		bool readMsg(char*,int);
-		msg_uart getMsg();
+		bool readChar(unsigned char);	
+		//bool readMsg(char*,int);
+		
 
 }; // class RF_uartEngine_Rx
 #endif // RF_UARTENGINE_RX_H

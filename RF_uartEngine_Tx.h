@@ -27,7 +27,6 @@ class RF_uartEngine_Tx : public RF_uartEngine
     bool msgSent();
     bool transmitError();
 
-		msg_uart getMsg(){return stateMachine.msg;}
 		void clearMsg();
 
 		char sendStartRF();
