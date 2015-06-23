@@ -294,7 +294,7 @@ bool RF_uartEngine_Rx::readChar(unsigned char inputUART)
 			stateMachine.msg.ptrMsg++;
 			*(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg) = *(stateMachine.msg.Data + stateMachine.msg.ptrMsg - 4) = inputUART;
 
-			if((stateMachine.msg.ptrMsg - 4) < stateMachine.msg.length){
+			if((stateMachine.msg.ptrMsg - 3) < stateMachine.msg.length){
 				stateMachine.state = STATE_ANS_GET_PARAM_N;	
 			}else{			
 				stateMachine.state = STATE_CRC_1;				

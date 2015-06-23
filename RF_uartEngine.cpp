@@ -78,8 +78,6 @@ void RF_uartEngine::CRC_compute()
 
 bool RF_uartEngine::CRC_check()
 {
-	printf("CRC Compute : %X\n", stateMachine.msg.crc_compute);
-	printf("CRC MSG : %X\n", stateMachine.msg.crc_msg);
 	return (stateMachine.msg.crc_compute == stateMachine.msg.crc_msg);
 }
 

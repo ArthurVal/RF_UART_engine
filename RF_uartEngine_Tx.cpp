@@ -274,7 +274,7 @@ char RF_uartEngine_Tx::sendSetMultiParam(
 
 		unsigned int previousSize = stateMachine.msg.sizeData;
 
-				//Data Value TODO
+				//Data Value
 		for(int i = 0 ; i < stateMachine.msg.nbrParam ; ++i){
 			maskIntValue = 0xFF000000;
 			maskLongValue = 0xFF00000000000000;	
@@ -496,6 +496,7 @@ char RF_uartEngine_Tx::sendAnswerGetParam(
 		switch(paramFormat){
 			case ASCII:				
 				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
 					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
@@ -573,6 +574,7 @@ char RF_uartEngine_Tx::sendAnswerGetParam(
 */
 			default:						
 				stateMachine.msg.length = stateMachine.msg.sizeData = paramValueSize + 1;
+				stateMachine.msg.Data = (unsigned char*)realloc(stateMachine.msg.Data , sizeof(unsigned char) * stateMachine.msg.sizeData);
 				*(stateMachine.msg.Data) = stateMachine.msg.ID[0];
 				for(int i = 0 ; i < stateMachine.msg.sizeData  ; i++){
 					*(stateMachine.msg.Data + i + 1) = *(paramValue + i);
@@ -681,11 +683,11 @@ void RF_uartEngine_Tx::createCurrentMsg()
 		}
 
 	CRC_compute(); //Compute CRC
-
+	stateMachine.msg.crc_msg = stateMachine.msg.crc_compute;
 		//CRC MSB
-	*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute >> 8);
+	*(stateMachine.msg.currentMsg + 4 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_msg >> 8);
 		//CRC LSB
-	*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_compute & 0x00FF);
+	*(stateMachine.msg.currentMsg + 5 + stateMachine.msg.length) = (unsigned char)(stateMachine.msg.crc_msg & 0x00FF);
 
 		//Stop Bytes
 	*(stateMachine.msg.currentMsg + 6 + stateMachine.msg.length) = 0x0D;
@@ -1288,6 +1290,8 @@ char RF_uartEngine_Tx::writeChar()
 				stateMachine.state = STATE_ANS_GET_PARAM_N;
 			else
 				stateMachine.state = STATE_CRC_1;
+			
+			return *(stateMachine.msg.currentMsg + stateMachine.msg.ptrMsg);
 		break;
 
 
