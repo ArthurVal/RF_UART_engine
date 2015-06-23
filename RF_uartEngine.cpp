@@ -9,8 +9,14 @@ RF_uartEngine::RF_uartEngine()
 	stateMachine.msg.currentMsg = (unsigned char*)malloc(sizeof(unsigned char) * stateMachine.msg.sizeMsg);
 ;
 
-	stateMachine.msg.functionCode = 0xFF;
-	stateMachine.msg.length = 0xFFFF;
+	stateMachine.msg.functionCode = 0x00;
+	stateMachine.msg.length = 0x0000;
+
+	stateMachine.msg.nbrParam = 0x00;
+
+	for(int i = 0 ; i < 256 ; ++i){
+		stateMachine.msg.ID[i] = 0x00;
+	}	
 
 	stateMachine.msg.sizeData = 1;
 	stateMachine.msg.Data = (unsigned char*)malloc(sizeof(unsigned char) * stateMachine.msg.sizeData );
@@ -32,9 +38,9 @@ void RF_uartEngine::MSG_clear()
 {
   stateMachine.msg.ptrMsg = 0;
 
-	stateMachine.msg.functionCode = 0xFF;
+	stateMachine.msg.functionCode = 0x00;
 
-	stateMachine.msg.length = 0xFFFF;
+	stateMachine.msg.length = 0x0000;
 
 	stateMachine.msg.nbrParam = 0x00;
 

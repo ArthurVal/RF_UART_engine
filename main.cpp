@@ -50,7 +50,7 @@ int main(){
 
 			//TX LOOP
 	do{
-		//text[i] = TxUART.sendStartRF();
+		text[i] = TxUART.sendStartRF();
 		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
 		//text[i] = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
 		//text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
@@ -73,15 +73,24 @@ int main(){
 		return -1;
 	}
 
+
 	i = 0;
 			//RX LOOP
+		//Insert Error
+	//text[0] = 0x3A;
+	//text[1] = 0x3B;
+	//text[2] = 0x00;
+	//text[3] = 0x04;
+	//text[4] = 0x3A;
+	//text[5] = 0x3B;
+	//text[6] = 0x00;
+	//text[7] = 0x04;
+
 	do{
+		//printf("BYTE RECEIVED: %X\n",text[i]);
 		msgReceive = RxUART.readChar(text[i]);
 		i++;
-		if(i == 100)
-			msgReceive = true;
-
-	}while(!msgReceive);
+	}while((!msgReceive) && (i<20));
 	RxStatus = RxUART.getStatus();
  	if(RxStatus < 0 ){
 		printf("-----------------------------------\n");
@@ -89,9 +98,11 @@ int main(){
 		printf("---         CODE : %d           ---\n", RxStatus);
 		printf("-----------------------------------\n");
 		return -1;
+	}else{
+		printf("-----------------------------------\n");
+		printf("---      RX Status : %d          ---\n", RxStatus);	
+		printf("-----------------------------------\n");	
 	}
-
-
 
   MSG_RX = RxUART.getMsg();
   MSG_TX = TxUART.getMsg();
@@ -111,13 +122,13 @@ int main(){
 	printf("Nb Param      => TX: %X |-| RX: %X\n", MSG_TX.nbrParam, MSG_RX.nbrParam);
 	if((MSG_TX.nbrParam > 0) && (MSG_RX.nbrParam > 0)){
 		printf("IDs:\n");
-		for(int j = 0 ; (j < MSG_RX.nbrParam) || (j < MSG_TX.nbrParam) ; j++)
+		for(int j = 0 ; (j < MSG_RX.nbrParam) && (j < MSG_TX.nbrParam) ; j++)
 			printf("              -- TX: %X || RX: %X\n", MSG_TX.ID[j], MSG_RX.ID[j]);
 	}
 
 	if((MSG_TX.sizeData > 0) && (MSG_RX.sizeData > 0)){
 		printf("Datas:\n");
-		for(int j = 0 ; (j < MSG_TX.sizeData) || (j < MSG_RX.sizeData) ; j++)
+		for(int j = 0 ; (j < MSG_TX.sizeData) && (j < MSG_RX.sizeData) ; j++)
 			printf("              -- TX: %X || RX: %X\n", MSG_TX.Data[j], MSG_RX.Data[j]);
 	}
 	printf(" -> CRC:\n");
