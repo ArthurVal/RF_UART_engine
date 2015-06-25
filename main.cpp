@@ -53,7 +53,7 @@ int main(){
 		//text[i] = TxUART.sendStartRF();
 		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
 		//text[i] = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
-		//text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
+		text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
 		//text[i] = TxUART.sendGetParam(dataToSendTestName[4]);
 		//text[i] = TxUART.sendAnswerStartRF(true);
 		//text[i] = TxUART.sendAnswerMoveAngle(false);
