@@ -306,22 +306,11 @@ bool RF_uartEngine_Rx::readChar(unsigned char inputUART)
 			//            STATE_ERR           //
 			////////////////////////////////////
 		case STATE_ERR: //Wait for stop byte 0x0D -> 0x0A
-			if(inputUART == 0x0D){
-				stateMachine.state = STATE_ERR_END;	
-			}else{			
-				stateMachine.state = STATE_ERR;				
-			}
-			stateMachine.RX_msgRdy = false;	
-		break;
+			stateMachine.state = STATE_INIT;
+			if(stateMachine.status >= 0)
+				stateMachine.status = STATUS_ERR_INTERNAL;
 
-		case STATE_ERR_END: //Wait for stop byte 0x0D -> 0x0A
-			if(inputUART == 0x0A){
-				stateMachine.state = STATE_INIT;	
-				stateMachine.RX_msgRdy = true;	
-			}else{			
-				stateMachine.state = STATE_ERR;	
-				stateMachine.RX_msgRdy = false;				
-			}
+			stateMachine.RX_msgRdy = true;	
 		break;
 
 
