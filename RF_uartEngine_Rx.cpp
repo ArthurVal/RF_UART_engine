@@ -13,7 +13,7 @@ RF_uartEngine_Rx::RF_uartEngine_Rx()
 
 bool RF_uartEngine_Rx::readChar(unsigned char inputUART)
 {
-	//printf("BYTE RECEIVED: %X\n",inputUART);
+	printf("BYTE RECEIVED: %X\n",inputUART);
 	if(stateMachine.status != STATUS_BLOCKED){
 		switch(stateMachine.state)
 		{
