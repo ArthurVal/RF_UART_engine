@@ -1,8 +1,11 @@
 
 #include "RF_uartEngine_Tx.h"
 #include "RF_uartEngine_Rx.h"
-#include <stdio.h>
+#include <cstdio>
+#include <unistd.h>
+#include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <SerialStream.h>
 
 int main(){
@@ -61,6 +64,12 @@ int main(){
 	// Open the serial port for communication.
 	//
 	my_serial_stream.Open( "/dev/ttyACM0" );
+	if(!my_serial_stream.good()){
+		std::cout << "[" << __FILE__ << ":" << __LINE__ << "] "
+		          << "Error: Could not open serial port." << std::endl;
+		exit(1);
+	}
+
 	my_serial_stream.SetBaudRate(SerialStreamBuf::BAUD_57600);
 	//
 	// Use 8 bit wide characters.
@@ -70,7 +79,11 @@ int main(){
 	// Use one stop bit.
 	//
 	my_serial_stream.SetNumOfStopBits(1) ;
-
+	
+	//
+	// Do not skip whitespace characters while reading frem the serial port
+	//
+	my_serial_stream.unsetf( std::ios_base::skipws );
 
 	printf("=======================\n");
 	printf("SERIAL PORT INITIALIZED\n");
@@ -111,40 +124,90 @@ int main(){
 					return -1;
 				}
 				printf("SENT\n");
-				printf("MOVE TO ANGLE: ");
-				do{
-					my_serial_stream << TxUART.sendMoveAngle(ANGLE_PHI);
-				}while(!TxUART.msgSent() && !TxUART.transmitError());
- 				if(TxUART.transmitError()){
-					printf("\n-----------------------------------\n");
-					printf("---   TRANSMIT ERROR DETECTED   ---\n");
-					printf("-----------------------------------\n");
-					my_serial_stream.Close();
-					return -1;
-				}
-				printf("SENT\n\n");
+				usleep(20000); //Wait for error answer
+				if(my_serial_stream.rdbuf()->in_avail() > 0){
+					while(!msgReceive){
+						while(my_serial_stream.rdbuf()->in_avail() == 0){
+							usleep(100); //Wait for data to be available
+						}								
+						while(my_serial_stream.rdbuf()->in_avail() > 0){
+							char charInput;					
+							my_serial_stream.get(charInput);
+							//printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+							msgReceive = RxUART.readChar(charInput);
+							if(msgReceive)
+								break;	
+						}
+					}
+					RxStatus = RxUART.getStatus();
+					MSG_RX = RxUART.getMsg();
+					msgReceive = false;
+	 				if(RxStatus < 0 ){
+						printf("-----------------------------------\n");
+						printf("---    RECEIVE ERROR DETECTED   ---\n");
+						printf("---         CODE : %d           ---\n", RxStatus);
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}else{
+						printf("- RX Msg Received :\n");
+						printf("---> Status : %d\n", RxStatus);	
+						printf("---> Function Code : %X\n", MSG_RX.functionCode);
+						if(MSG_RX.functionCode == FCT_ERR_CARTE)
+							printf("-----> ERR WRONG DATA RANGE");
+						printf("\n\n");	
+					}
 
-				/*printf("Waiting for Arduino to answer ...\n");
-				do{					
-					my_serial_stream >> next_char;
-					printf("BYTE RECEIVED: %X\n",next_char);
-					msgReceive = RxUART.readChar(next_char);
-				}while((!msgReceive));
-				RxStatus = RxUART.getStatus();
-			  MSG_RX = RxUART.getMsg();
- 				if(RxStatus < 0 ){
-					printf("-----------------------------------\n");
-					printf("---    RECEIVE ERROR DETECTED   ---\n");
-					printf("---         CODE : %d           ---\n", RxStatus);
-					printf("-----------------------------------\n");
-					my_serial_stream.Close();
-					return -1;
 				}else{
-					printf("- RX Msg Received :\n");
-					printf("---> Status : %d\n", RxStatus);	
-					printf("---> Function Code : %X\n\n\n", MSG_RX.functionCode);	
-				}*/
+					printf("MOVE TO ANGLE: ");
+					do{
+						my_serial_stream << TxUART.sendMoveAngle(ANGLE_PHI);
+					}while(!TxUART.msgSent() && !TxUART.transmitError());
+	 				if(TxUART.transmitError()){
+						printf("\n-----------------------------------\n");
+						printf("---   TRANSMIT ERROR DETECTED   ---\n");
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}
+					printf("SENT\n\n");
+
+					printf("Waiting for Arduino to answer: \n");
+
+					while(!msgReceive){
+						while(my_serial_stream.rdbuf()->in_avail() == 0){
+							usleep(100); //Wait for data to be available
+						};								
+						while(my_serial_stream.rdbuf()->in_avail() > 0){
+							char charInput;					
+							my_serial_stream.get(charInput);
+							//printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+							msgReceive = RxUART.readChar(charInput);
+							if(msgReceive)
+								break;	
+						};
+					};
+					RxStatus = RxUART.getStatus();
+					MSG_RX = RxUART.getMsg();
+					msgReceive = false;
+	 				if(RxStatus < 0 ){
+						printf("-----------------------------------\n");
+						printf("---    RECEIVE ERROR DETECTED   ---\n");
+						printf("---         CODE : %d           ---\n", RxStatus);
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}else{
+						printf("- RX Msg Received :\n");
+						printf("---> Status : %d\n", RxStatus);	
+						printf("---> Function Code : %X\n", MSG_RX.functionCode);
+						if(MSG_RX.functionCode == FCT_ANS_MOVE)
+							printf("-----> Move Ack : %X\n", MSG_RX.Data[0]);
+						printf("\n\n");	
+					}
+				}
 			break;
+
 			default:
 				printf("ENDING PROGRAM\n");
 		}

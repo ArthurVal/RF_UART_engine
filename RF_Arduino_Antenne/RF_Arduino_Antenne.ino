@@ -24,7 +24,7 @@ int tmpposServo = posServo;               // variable to store the servo positio
 boolean newPosServo = false;              // flag indicating when the servo get new pos
   //Pos min & max
 int posServoMin = 21;
-int posServoMax = 169;
+int posServoMax = 159;
 
   //Flag indicating when a msg has been received
 boolean msgReceive = false;
@@ -112,8 +112,8 @@ void loop() {
           }else{
             
               // Indicate that an error occurs (Bad ID param)
-            Serial.print("Erreur Fonction Set Param, ID: ");
-            Serial.println(MSG_RX.ID[0]);
+            //Serial.print("Erreur Fonction Set Param, ID: ");
+            //Serial.println(MSG_RX.ID[0]);
             do{
               Serial.write((char)TxUART.sendErrCarte());
             }while(!TxUART.msgSent() && !TxUART.transmitError());              
@@ -121,8 +121,8 @@ void loop() {
         break;
         
         default:
-          Serial.print("Erreur Fonction Code: ");
-          Serial.println(MSG_RX.functionCode);
+          //Serial.print("Erreur Fonction Code: ");
+          //Serial.println(MSG_RX.functionCode);
             //Send Unknow FCT MSG received
           do{
             Serial.write((char)TxUART.sendErrUnknowMsg());
@@ -132,8 +132,8 @@ void loop() {
     }else{
       
       msgReceive = false;
-      Serial.print("Erreur Read Status: ");
-      Serial.println(RxStatus);
+      //Serial.print("Erreur Read Status: ");
+      //Serial.println(RxStatus);
             //Send Internal Err
       do{
         Serial.write((char)TxUART.sendErrCarte());
