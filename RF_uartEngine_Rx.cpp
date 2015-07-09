@@ -10,7 +10,7 @@ RF_uartEngine_Rx::RF_uartEngine_Rx()
 /*==                 msgIsReady                   ==*/
 /*==================================================*/
 
-bool RF_uartEngine_Rx::msgIsReady();
+bool RF_uartEngine_Rx::msgIsReady()
 {
 	return stateMachine.RX_msgRdy;
 }
