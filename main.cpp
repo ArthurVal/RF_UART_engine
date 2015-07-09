@@ -125,6 +125,7 @@ int main(){
 				}
 				printf("SENT\n");
 				usleep(20000); //Wait for error answer
+
 				if(my_serial_stream.rdbuf()->in_avail() > 0){
 					while(!msgReceive){
 						while(my_serial_stream.rdbuf()->in_avail() == 0){
