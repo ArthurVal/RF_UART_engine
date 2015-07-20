@@ -22,10 +22,10 @@ int main(){
 	unsigned char dataToSendTestFormat[20];
 	unsigned short dataToSendTestSize[20];
 
-	dataToSendTestValue[0] = "123456789";
-	dataToSendTestName[0] = NBR_PTS;
+	dataToSendTestValue[0] = "45";
+	dataToSendTestName[0] = ANGLE_PHI;
 	dataToSendTestFormat[0] = ASCII;
-	dataToSendTestSize[0] = 9;
+	dataToSendTestSize[0] = 2;
 
 
 	dataToSendTestValue[1] = "65535";
@@ -52,8 +52,8 @@ int main(){
 	do{
 		//text[i] = TxUART.sendStartRF();
 		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
-		//text[i] = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
-		text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
+		text[i] = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
+		//text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
 		//text[i] = TxUART.sendGetParam(dataToSendTestName[4]);
 		//text[i] = TxUART.sendAnswerStartRF(true);
 		//text[i] = TxUART.sendAnswerMoveAngle(false);
