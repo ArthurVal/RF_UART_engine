@@ -23,7 +23,7 @@ class RF_uartEngine_Rx : public RF_uartEngine
 
 		//Methods
 		bool readChar(unsigned char);	
-		//bool readMsg(char*,int);
+		bool msgIsReady();
 		
 
 }; // class RF_uartEngine_Rx

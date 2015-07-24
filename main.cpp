@@ -1,7 +1,12 @@
 
 #include "RF_uartEngine_Tx.h"
 #include "RF_uartEngine_Rx.h"
-#include <stdio.h>
+#include <cstdio>
+#include <unistd.h>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <SerialStream.h>
 
 int main(){
 
@@ -9,6 +14,8 @@ int main(){
 	RF_uartEngine_Rx RxUART;
 
 	int i = 0;
+	int choice = 0;
+	char* stringInput;
 
 	unsigned char text[500];
 
@@ -22,7 +29,11 @@ int main(){
 	unsigned char dataToSendTestFormat[20];
 	unsigned short dataToSendTestSize[20];
 
+<<<<<<< HEAD
 	dataToSendTestValue[0] = "45";
+=======
+	dataToSendTestValue[0] = "21";
+>>>>>>> f14ae2bb41ff75cd9f1e34433067bc6c985e48d5
 	dataToSendTestName[0] = ANGLE_PHI;
 	dataToSendTestFormat[0] = ASCII;
 	dataToSendTestSize[0] = 2;
@@ -48,6 +59,7 @@ int main(){
 	dataToSendTestFormat[4] = ASCII;
 	dataToSendTestSize[4] = 21;
 
+<<<<<<< HEAD
 			//TX LOOP
 	do{
 		//text[i] = TxUART.sendStartRF();
@@ -71,70 +83,171 @@ int main(){
 		printf("---   TRANSMIT ERROR DETECTED   ---\n");
 		printf("-----------------------------------\n");
 		return -1;
+=======
+	using namespace LibSerial ;
+	//
+	// Create a SerialStream instance.
+	//
+	SerialStream my_serial_stream ;
+	//
+	// Open the serial port for communication.
+	//
+	my_serial_stream.Open( "/dev/ttyACM0" );
+	if(!my_serial_stream.good()){
+		std::cout << "[" << __FILE__ << ":" << __LINE__ << "] "
+		          << "Error: Could not open serial port." << std::endl;
+		exit(1);
+>>>>>>> f14ae2bb41ff75cd9f1e34433067bc6c985e48d5
+	}
+
+	my_serial_stream.SetBaudRate(SerialStreamBuf::BAUD_57600);
+	//
+	// Use 8 bit wide characters.
+	//
+	my_serial_stream.SetCharSize( SerialStreamBuf::CHAR_SIZE_8 );
+	//
+	// Use one stop bit.
+	//
+	my_serial_stream.SetNumOfStopBits(1) ;
+	
+	//
+	// Do not skip whitespace characters while reading frem the serial port
+	//
+	my_serial_stream.unsetf( std::ios_base::skipws );
+
+	printf("=======================\n");
+	printf("SERIAL PORT INITIALIZED\n");
+	printf("=======================\n");
+	printf("\n");
+
+
+
+	while(choice != 9){
+
+		printf("======================\n");
+		printf("Choose Msg to send: \n");
+		printf("\t- 1: Move Angle Phi\n");
+		printf("\t- 9: END\n");
+		choice = 0;
+		while((choice != 1) && (choice != 9)){			
+			scanf("%d", &choice);
+			printf("\n");
+		};
+		//printf("CHOICE = %d\n", choice);
+	
+		switch(choice){
+			case 1:
+				printf("Enter value of phi in degree: ");
+				scanf("%s",stringInput);
+				dataToSendTestValue[0] = stringInput;
+  			dataToSendTestSize[0] = (short)strlen(stringInput);
+ 
+				printf("\nSET ANGLE PHI VALUE = %s / SIZE = %d : ",dataToSendTestValue[0],dataToSendTestSize[0]);
+				do{
+					my_serial_stream << TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
+				}while(!TxUART.msgSent() && !TxUART.transmitError());
+ 				if(TxUART.transmitError()){
+					printf("\n-----------------------------------\n");
+					printf("---   TRANSMIT ERROR DETECTED   ---\n");
+					printf("-----------------------------------\n");
+					my_serial_stream.Close();
+					return -1;
+				}
+				printf("SENT\n");
+				usleep(20000); //Wait for error answer
+
+				if(my_serial_stream.rdbuf()->in_avail() > 0){
+					while(!msgReceive){
+						while(my_serial_stream.rdbuf()->in_avail() == 0){
+							usleep(100); //Wait for data to be available
+						}								
+						while(my_serial_stream.rdbuf()->in_avail() > 0){
+							char charInput;					
+							my_serial_stream.get(charInput);
+							//printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+							msgReceive = RxUART.readChar(charInput);
+							if(msgReceive)
+								break;	
+						}
+					}
+					RxStatus = RxUART.getStatus();
+					MSG_RX = RxUART.getMsg();
+					msgReceive = false;
+	 				if(RxStatus < 0 ){
+						printf("-----------------------------------\n");
+						printf("---    RECEIVE ERROR DETECTED   ---\n");
+						printf("---         CODE : %d           ---\n", RxStatus);
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}else{
+						printf("- RX Msg Received :\n");
+						printf("---> Status : %d\n", RxStatus);	
+						printf("---> Function Code : %X\n", MSG_RX.functionCode);
+						if(MSG_RX.functionCode == FCT_ERR_CARTE)
+							printf("-----> ERR WRONG DATA RANGE");
+						printf("\n\n");	
+					}
+
+				}else{
+					printf("MOVE TO ANGLE: ");
+					do{
+						my_serial_stream << TxUART.sendMoveAngle(ANGLE_PHI);
+					}while(!TxUART.msgSent() && !TxUART.transmitError());
+	 				if(TxUART.transmitError()){
+						printf("\n-----------------------------------\n");
+						printf("---   TRANSMIT ERROR DETECTED   ---\n");
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}
+					printf("SENT\n\n");
+
+					printf("Waiting for Arduino to answer: \n");
+
+					while(!msgReceive){
+						while(my_serial_stream.rdbuf()->in_avail() == 0){
+							usleep(100); //Wait for data to be available
+						};								
+						while(my_serial_stream.rdbuf()->in_avail() > 0){
+							char charInput;					
+							my_serial_stream.get(charInput);
+							//printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+							msgReceive = RxUART.readChar(charInput);
+							if(msgReceive)
+								break;	
+						};
+					};
+					RxStatus = RxUART.getStatus();
+					MSG_RX = RxUART.getMsg();
+					msgReceive = false;
+	 				if(RxStatus < 0 ){
+						printf("-----------------------------------\n");
+						printf("---    RECEIVE ERROR DETECTED   ---\n");
+						printf("---         CODE : %d           ---\n", RxStatus);
+						printf("-----------------------------------\n");
+						my_serial_stream.Close();
+						return -1;
+					}else{
+						printf("- RX Msg Received :\n");
+						printf("---> Status : %d\n", RxStatus);	
+						printf("---> Function Code : %X\n", MSG_RX.functionCode);
+						if(MSG_RX.functionCode == FCT_ANS_MOVE)
+							printf("-----> Move Ack : %X\n", MSG_RX.Data[0]);
+						printf("\n\n");	
+					}
+				}
+			break;
+
+			default:
+				printf("ENDING PROGRAM\n");
+		}
+
 	}
 
 
-	i = 0;
-			//RX LOOP
-		//Insert Error
-	//text[0] = 0x3A;
-	//text[1] = 0x3B;
-	//text[2] = 0x00;
-	//text[3] = 0x04;
-	//text[4] = 0x3A;
-	//text[5] = 0x3B;
-	//text[6] = 0x00;
-	//text[7] = 0x04;
 
-	do{
-		//printf("BYTE RECEIVED: %X\n",text[i]);
-		msgReceive = RxUART.readChar(text[i]);
-		i++;
-	}while((!msgReceive));
-	RxStatus = RxUART.getStatus();
- 	if(RxStatus < 0 ){
-		printf("-----------------------------------\n");
-		printf("---    RECEIVE ERROR DETECTED   ---\n");
-		printf("---         CODE : %d           ---\n", RxStatus);
-		printf("-----------------------------------\n");
-		return -1;
-	}else{
-		printf("-----------------------------------\n");
-		printf("---      RX Status : %d          ---\n", RxStatus);	
-		printf("-----------------------------------\n");	
-	}
 
-  MSG_RX = RxUART.getMsg();
-  MSG_TX = TxUART.getMsg();
-
-	printf("===================================\n");
-	printf("Message:\n");
-	printf("-----------------------------------\n");
-	for(int j = 0 ; j < MSG_RX.sizeMsg ; j++)
-		printf("TX_MSG | text[] | RX_MSG : %X | %X | %X\n", MSG_TX.currentMsg[j], text[j], MSG_RX.currentMsg[j]);
-	printf("-----------------------------------\n");
-	printf("Details:\n");
-	printf(" -> HEADER:\n");
-	printf("Function Code => TX: %X |-| RX: %X\n", MSG_TX.functionCode, MSG_RX.functionCode);
-	printf("Length        => TX: %X |-| RX: %X\n", MSG_TX.length, MSG_RX.length);
-	printf(" -> DATA:\n");
-
-	printf("Nb Param      => TX: %X |-| RX: %X\n", MSG_TX.nbrParam, MSG_RX.nbrParam);
-	if((MSG_TX.nbrParam > 0) && (MSG_RX.nbrParam > 0)){
-		printf("IDs:\n");
-		for(int j = 0 ; (j < MSG_RX.nbrParam) && (j < MSG_TX.nbrParam) ; j++)
-			printf("              -- TX: %X || RX: %X\n", MSG_TX.ID[j], MSG_RX.ID[j]);
-	}
-
-	if((MSG_TX.sizeData > 0) && (MSG_RX.sizeData > 0)){
-		printf("Datas:\n");
-		for(int j = 0 ; (j < MSG_TX.sizeData) && (j < MSG_RX.sizeData) ; j++)
-			printf("              -- TX: %X || RX: %X\n", MSG_TX.Data[j], MSG_RX.Data[j]);
-	}
-	printf(" -> CRC:\n");
-	printf("CRC (MSG)     => TX: %X |-| RX: %X\n", MSG_TX.crc_msg, MSG_RX.crc_msg);
-	printf("CRC (CPT)     => TX: %X |-| RX: %X\n", MSG_TX.crc_compute, MSG_RX.crc_compute);
-	printf("===================================\n");
-
+	my_serial_stream.Close();
 	return 0;
 }
