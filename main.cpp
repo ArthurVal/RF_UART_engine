@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
+#include <stdlib.h>
 #include <iostream>
 #include <SerialStream.h>
 
@@ -20,6 +21,7 @@ int main(){
 	int i = 0;
 	int choice = 0;
 	char* stringInput;
+	int NbrParams = 0;
 	
 	unsigned char charSend = 0x00;
 	unsigned char text[500];
@@ -34,11 +36,7 @@ int main(){
 	unsigned char dataToSendTestFormat[20];
 	unsigned short dataToSendTestSize[20];
 
-<<<<<<< HEAD
-	dataToSendTestValue[0] = "45";
-=======
 	dataToSendTestValue[0] = "21";
->>>>>>> f14ae2bb41ff75cd9f1e34433067bc6c985e48d5
 	dataToSendTestName[0] = ANGLE_PHI;
 	dataToSendTestFormat[0] = ASCII;
 	dataToSendTestSize[0] = 2;
@@ -62,33 +60,9 @@ int main(){
 	dataToSendTestValue[4] = "651981116519116516198";
 	dataToSendTestName[4] = INTENSITY;
 	dataToSendTestFormat[4] = ASCII;
-	dataToSendTestSize[4] = 21;
+	dataToSendTestSize[4] = 21; 
 
-<<<<<<< HEAD
-			//TX LOOP
-	do{
-		//text[i] = TxUART.sendStartRF();
-		//text[i] = TxUART.sendMoveAngle(ANGLE_PHI);
-		text[i] = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
-		//text[i] = TxUART.sendSetMultiParam(5, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
-		//text[i] = TxUART.sendGetParam(dataToSendTestName[4]);
-		//text[i] = TxUART.sendAnswerStartRF(true);
-		//text[i] = TxUART.sendAnswerMoveAngle(false);
-		//text[i] = TxUART.sendAnswerGetParam(dataToSendTestName[4] ,dataToSendTestFormat[4] ,dataToSendTestValue[4] ,dataToSendTestSize[4]);
-		//text[i] = TxUART.sendErrCRC();
-		//text[i] = TxUART.sendErrUnknowMsg();
-		//text[i] = TxUART.sendErrCarte();
 
-		//printf("BYTE TRANSMIT: %X\n", text[i]);
-
-		i++;
-	}while(!TxUART.msgSent() && !TxUART.transmitError());
- 	if(TxUART.transmitError()){
-		printf("-----------------------------------\n");
-		printf("---   TRANSMIT ERROR DETECTED   ---\n");
-		printf("-----------------------------------\n");
-		return -1;
-=======
 	using namespace LibSerial ;
 	//
 	// Create a SerialStream instance.
@@ -97,12 +71,11 @@ int main(){
 	//
 	// Open the serial port for communication.
 	//
-	my_serial_stream.Open("/dev/ttyUSB0");
+	my_serial_stream.Open("/dev/ttyACM0");
 	if(!my_serial_stream.good()){
 		std::cout << "[" << __FILE__ << ":" << __LINE__ << "] "
 		          << "Error: Could not open serial port." << std::endl;
 		exit(1);
->>>>>>> f14ae2bb41ff75cd9f1e34433067bc6c985e48d5
 	}
 
 	my_serial_stream.SetBaudRate(SerialStreamBuf::BAUD_57600);
@@ -134,10 +107,11 @@ int main(){
 		printf("\t- 1: Move Angle Phi\n");
 		printf("\t- 2: Start Acquisition\n");
 		printf("\t- 3: Set Param\n");
-		printf("\t- 4: Get Param\n");
+		printf("\t- 4: Set Multiple Params\n");
+		printf("\t- 5: Get Param\n");
 		printf("\t- 9: END\n");
 		choice = 0;
-		while((choice != 1) && (choice != 2) && (choice != 3) && (choice != 4) && (choice != 9)){			
+		while((choice != 1) && (choice != 2) && (choice != 3) && (choice != 4) && (choice != 5) && (choice != 9)){			
 			scanf("%d", &choice);
 			printf("\n");
 		};
@@ -353,6 +327,63 @@ int main(){
 			
 			break;
 /*=================================================================================*/
+			case 4: // Set Multi Params
+ 
+				printf("SET MULTI PARAMS");
+				printf("----------------------\n");
+				while((NbrParams < 1) || (NbrParams > 4)){		
+					printf("Choose number of params: \n");	
+					scanf("%d", &NbrParams);
+					printf("\n");
+				};
+
+				for(int k = 0; k<NbrParams ; k++){
+					printf("Choose Param to set %d : \n",k);
+					printf("\t- 1: Freq_TSCLK\n");
+					printf("\t- 2: Freq_Echnatillonnage\n");
+					printf("\t- 3: Nbr_Echantillon\n");
+					choice = 0;
+					while((choice != 1) && (choice != 2) && (choice != 3)){			
+						scanf("%d", &choice);
+						printf("\n");
+					};
+					switch(choice){
+						case 1:
+							dataToSendTestName[k] = FREQ_TSCLK;
+						break;
+						case 2:						
+							dataToSendTestName[k] = FREQ_ECH;
+						break;
+						case 3:
+							dataToSendTestName[k] = NBR_ECH;
+						break;				
+					}
+					printf("Enter value of param %d : \n",k);
+					scanf("%s",stringInput);
+					printf("YO");
+					dataToSendTestValue[k] = stringInput;
+					dataToSendTestSize[k] = (short)strlen(stringInput);
+	 				dataToSendTestFormat[k] = ASCII;
+				}
+				printf("Message send:\n");
+				do{
+					charSend = TxUART.sendSetMultiParam(NbrParams, dataToSendTestName ,dataToSendTestFormat ,dataToSendTestValue ,dataToSendTestSize);
+					printf("BYTE SEND: %X\n",charSend);
+					my_serial_stream << charSend;				
+				}while(!TxUART.msgSent() && !TxUART.transmitError());
+	 				if(TxUART.transmitError()){
+					printf("\n-----------------------------------\n");
+					printf("---   TRANSMIT ERROR DETECTED   ---\n");
+					printf("-----------------------------------\n");
+					my_serial_stream.Close();
+					return -1;
+				}
+			NbrParams = 0;
+			break;
+/*=================================================================================*/
+
+
+
 			default:
 				printf("ENDING PROGRAM\n");
 		}
