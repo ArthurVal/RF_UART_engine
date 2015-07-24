@@ -8,6 +8,10 @@
 #include <iostream>
 #include <SerialStream.h>
 
+#define USB_ARDUINO "/dev/ttyACM0"
+#define USB_DSP_I "/dev/ttyprintk"
+
+
 int main(){
 
 	RF_uartEngine_Tx TxUART;
@@ -16,7 +20,8 @@ int main(){
 	int i = 0;
 	int choice = 0;
 	char* stringInput;
-
+	
+	unsigned char charSend = 0x00;
 	unsigned char text[500];
 
 	bool msgReceive;
@@ -92,7 +97,7 @@ int main(){
 	//
 	// Open the serial port for communication.
 	//
-	my_serial_stream.Open( "/dev/ttyACM0" );
+	my_serial_stream.Open("/dev/ttyUSB0");
 	if(!my_serial_stream.good()){
 		std::cout << "[" << __FILE__ << ":" << __LINE__ << "] "
 		          << "Error: Could not open serial port." << std::endl;
@@ -127,9 +132,12 @@ int main(){
 		printf("======================\n");
 		printf("Choose Msg to send: \n");
 		printf("\t- 1: Move Angle Phi\n");
+		printf("\t- 2: Start Acquisition\n");
+		printf("\t- 3: Set Param\n");
+		printf("\t- 4: Get Param\n");
 		printf("\t- 9: END\n");
 		choice = 0;
-		while((choice != 1) && (choice != 9)){			
+		while((choice != 1) && (choice != 2) && (choice != 3) && (choice != 4) && (choice != 9)){			
 			scanf("%d", &choice);
 			printf("\n");
 		};
@@ -143,8 +151,11 @@ int main(){
   			dataToSendTestSize[0] = (short)strlen(stringInput);
  
 				printf("\nSET ANGLE PHI VALUE = %s / SIZE = %d : ",dataToSendTestValue[0],dataToSendTestSize[0]);
+				printf("Message send:\n");
 				do{
-					my_serial_stream << TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
+					charSend = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
+					printf("BYTE SEND: %X\n",charSend);
+					my_serial_stream << charSend;				
 				}while(!TxUART.msgSent() && !TxUART.transmitError());
  				if(TxUART.transmitError()){
 					printf("\n-----------------------------------\n");
@@ -212,7 +223,7 @@ int main(){
 						while(my_serial_stream.rdbuf()->in_avail() > 0){
 							char charInput;					
 							my_serial_stream.get(charInput);
-							//printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+							printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
 							msgReceive = RxUART.readChar(charInput);
 							if(msgReceive)
 								break;	
@@ -238,15 +249,115 @@ int main(){
 					}
 				}
 			break;
+/*=================================================================================*/
+			case 2: // Start Acqui
+ 
+				printf("\nSTART ACQUISITION");
+				printf("Message send:\n");
+				do{
+					charSend = TxUART.sendStartRF();
+					printf("BYTE SEND: %X\n",charSend);
+					my_serial_stream << charSend;				
+				}while(!TxUART.msgSent() && !TxUART.transmitError());
 
+ 				if(TxUART.transmitError()){
+					printf("\n-----------------------------------\n");
+					printf("---   TRANSMIT ERROR DETECTED   ---\n");
+					printf("-----------------------------------\n");
+					my_serial_stream.Close();
+					return -1;
+				}
+
+				printf("SENT\n");
+				usleep(20000); //Wait for answer
+				while(!msgReceive){
+					while(my_serial_stream.rdbuf()->in_avail() == 0){
+						usleep(100); //Wait for data to be available
+					}								
+					while(my_serial_stream.rdbuf()->in_avail() > 0){
+						char charInput;					
+						my_serial_stream.get(charInput);
+						printf("BYTE RECEIVED: %X\n",(unsigned)charInput);
+						msgReceive = RxUART.readChar(charInput);
+						if(msgReceive)
+							break;	
+					}
+				}
+				RxStatus = RxUART.getStatus();
+				MSG_RX = RxUART.getMsg();
+				msgReceive = false;
+ 				if(RxStatus < 0 ){
+					printf("-----------------------------------\n");
+					printf("---    RECEIVE ERROR DETECTED   ---\n");
+					printf("---         CODE : %d           ---\n", RxStatus);
+					printf("-----------------------------------\n");
+					my_serial_stream.Close();
+					return -1;
+				}else{
+					printf("- RX Msg Received :\n");
+					printf("---> Status : %d\n", RxStatus);	
+					printf("---> Function Code : %X\n", MSG_RX.functionCode);
+					if(MSG_RX.functionCode == FCT_ERR_CARTE)
+						printf("-----> ERR WRONG DATA RANGE");
+					if(MSG_RX.functionCode == FCT_ANS_START_RF)
+						printf("-----> START RF ANSWER: %X", MSG_RX.Data[0]);
+					printf("\n\n");	
+				}
+			
+			break;
+/*=================================================================================*/
+			case 3: // Set Param
+ 
+				printf("SET PARAM");
+				printf("----------------------\n");
+				printf("Choose Param to set: \n");
+				printf("\t- 1: Freq_TSCLK\n");
+				printf("\t- 2: Freq_Echnatillonnage\n");
+				printf("\t- 3: Nbr_Echantillon\n");
+				choice = 0;
+				while((choice != 1) && (choice != 2) && (choice != 3)){			
+					scanf("%d", &choice);
+					printf("\n");
+				};
+				switch(choice){
+					case 1:
+						dataToSendTestName[0] = FREQ_TSCLK;
+					break;
+					case 2:						
+						dataToSendTestName[0] = FREQ_ECH;
+					break;
+					case 3:
+						dataToSendTestName[0] = NBR_ECH;
+					break;				
+				}
+				printf("Enter value of param: ");
+				scanf("%s",stringInput);
+				dataToSendTestValue[0] = stringInput;
+  			dataToSendTestSize[0] = (short)strlen(stringInput);
+ 				dataToSendTestFormat[0] = ASCII;
+
+				printf("Message send:\n");
+				do{
+					charSend = TxUART.sendSetParam(dataToSendTestName[0] ,dataToSendTestFormat[0] ,dataToSendTestValue[0] ,dataToSendTestSize[0]);
+					printf("BYTE SEND: %X\n",charSend);
+					my_serial_stream << charSend;				
+				}while(!TxUART.msgSent() && !TxUART.transmitError());
+
+ 				if(TxUART.transmitError()){
+					printf("\n-----------------------------------\n");
+					printf("---   TRANSMIT ERROR DETECTED   ---\n");
+					printf("-----------------------------------\n");
+					my_serial_stream.Close();
+					return -1;
+				}
+			
+			break;
+/*=================================================================================*/
 			default:
 				printf("ENDING PROGRAM\n");
 		}
 
 	}
-
-
-
 
 	my_serial_stream.Close();
 	return 0;

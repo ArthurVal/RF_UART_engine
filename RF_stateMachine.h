@@ -140,6 +140,9 @@
 #define ANGLE_PHI 0x06
 #define ANGLE_THETA 0x07
 #define INTENSITY 0x08
+#define FREQ_TSCLK 0x09
+#define FREQ_ECH 0x0A
+#define NBR_ECH 0x0B
 
 /*==========================================*/	
 /*         paramFormat definition           */
